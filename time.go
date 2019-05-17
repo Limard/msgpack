@@ -12,8 +12,8 @@ import (
 var timeExtId int8 = -1
 
 func init() {
-	timeType := reflect.TypeOf((*time.Time)(nil)).Elem()
-	registerExt(timeExtId, timeType, encodeTimeValue, decodeTimeValue)
+	//timeType := reflect.TypeOf((*time.Time)(nil)).Elem()
+	//registerExt(timeExtId, timeType, encodeTimeValue, decodeTimeValue)
 }
 
 func (e *Encoder) EncodeTime(tm time.Time) error {
@@ -83,6 +83,17 @@ func (d *Decoder) decodeTime() (time.Time, error) {
 			}
 
 			return time.Unix(sec, nsec), nil
+		}
+
+		// java ms
+		if c == codes.Int64 || c == codes.Uint64 {
+			b, err := d.readN(8)
+			if err != nil {
+				return time.Time{}, err
+			}
+
+			sec := binary.BigEndian.Uint64(b)
+			return time.Unix(int64(sec/1000), 0), nil
 		}
 
 		if codes.IsString(c) {
