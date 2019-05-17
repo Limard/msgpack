@@ -255,7 +255,7 @@ func (d *Decoder) DecodeBool() (bool, error) {
 }
 
 func (d *Decoder) bool(c codes.Code) (bool, error) {
-	if c == codes.False {
+	if c == codes.False || c == codes.Nil {
 		return false, nil
 	}
 	if c == codes.True {
