@@ -2,8 +2,10 @@ package msgpack_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/vmihailenco/msgpack"
 	"github.com/vmihailenco/msgpack/codes"
@@ -146,7 +148,7 @@ func TestExt(t *testing.T) {
 }
 
 func TestUnknownExt(t *testing.T) {
-	b := []byte{byte(codes.FixExt1), 1, 0}
+	b := []byte{byte(codes.FixExt1), 2, 0}
 
 	var dst interface{}
 	err := msgpack.Unmarshal(b, &dst)
@@ -154,7 +156,7 @@ func TestUnknownExt(t *testing.T) {
 		t.Fatalf("got nil, wanted error")
 	}
 	got := err.Error()
-	wanted := "msgpack: unregistered ext id=1"
+	wanted := "msgpack: unknown ext id=2"
 	if got != wanted {
 		t.Fatalf("got %q, wanted %q", got, wanted)
 	}
@@ -179,5 +181,55 @@ func TestDecodeExtWithMap(t *testing.T) {
 	wanted := map[string]interface{}{"I": int64(42)}
 	if !reflect.DeepEqual(got, wanted) {
 		t.Fatalf("got %#v, but wanted %#v", got, wanted)
+	}
+}
+
+func TestSliceOfTime(t *testing.T) {
+	in := []interface{}{time.Now()}
+	b, err := msgpack.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out []interface{}
+	err = msgpack.Unmarshal(b, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outTime := *out[0].(*time.Time)
+	inTime := in[0].(time.Time)
+	if outTime.Unix() != inTime.Unix() {
+		t.Fatalf("got %v, wanted %v", outTime, inTime)
+	}
+}
+
+type customPayload struct {
+	payload []byte
+}
+
+func (cp *customPayload) UnmarshalMsgpack(b []byte) error {
+	cp.payload = b
+	return nil
+}
+
+func TestDecodeCustomPayload(t *testing.T) {
+	b, err := hex.DecodeString("c70500c09eec3100")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msgpack.RegisterExt(0, (*customPayload)(nil))
+
+	var cp *customPayload
+	err = msgpack.Unmarshal(b, &cp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload := hex.EncodeToString(cp.payload)
+	wanted := "c09eec3100"
+	if payload != wanted {
+		t.Fatalf("got %q, wanted %q", payload, wanted)
 	}
 }
