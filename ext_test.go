@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vmihailenco/msgpack/v4"
+	"github.com/Limard/msgpack"
 	"github.com/Limard/msgpack/codes"
 )
 
