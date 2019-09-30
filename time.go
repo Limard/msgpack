@@ -6,11 +6,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/vmihailenco/msgpack/codes"
+	"github.com/Limard/msgpack/codes"
 )
 
-var timeExtId int8 = -1
+var timeExtID int8 = -1
 
+//nolint:gochecknoinits
 func init() {
 	//timeType := reflect.TypeOf((*time.Time)(nil)).Elem()
 	//registerExt(timeExtId, timeType, encodeTimeValue, decodeTimeValue)
@@ -21,7 +22,7 @@ func (e *Encoder) EncodeTime(tm time.Time) error {
 	if err := e.encodeExtLen(len(b)); err != nil {
 		return err
 	}
-	if err := e.w.WriteByte(byte(timeExtId)); err != nil {
+	if err := e.w.WriteByte(byte(timeExtID)); err != nil {
 		return err
 	}
 	return e.write(b)
@@ -39,16 +40,15 @@ func (e *Encoder) encodeTime(tm time.Time) []byte {
 			b := e.timeBuf[:4]
 			binary.BigEndian.PutUint32(b, uint32(data))
 			return b
-		} else {
-			b := e.timeBuf[:8]
-			binary.BigEndian.PutUint64(b, data)
-			return b
 		}
+		b := e.timeBuf[:8]
+		binary.BigEndian.PutUint64(b, data)
+		return b
 	}
 
 	b := e.timeBuf[:12]
 	binary.BigEndian.PutUint32(b, uint32(tm.Nanosecond()))
-	binary.BigEndian.PutUint64(b[4:], uint64(secs))
+	binary.BigEndian.PutUint64(b[4:], secs)
 	return b
 }
 
